@@ -1,12 +1,37 @@
-<h1>RadioLib Status Code Decoder</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Macro Name Finder</title>
+</head>
+<body>
+    <h1>Find Macro Name</h1>
+    <form id="macroForm">
+        <label for="macroValue">Enter Value:</label>
+        <input type="text" id="macroValue" name="macroValue" required>
+        <button type="submit">Find Macro</button>
+    </form>
 
-<script src="decode.js"></script>
-<form onsubmit="return processCode();" class="status-form"> 
-  <label for="statCode">Status Code:</label>
-  <input type="text" id="statCode" name="statCode">
-  <input type="submit" value="Submit"><br><br>
+    <h2>Result:</h2>
+    <p id="result">Enter a value and click "Find Macro" to see the result here.</p>
 
-  <label for="statCode">Macro Name:</label>
-  <input type="text" id="statCode" name="statCode" disabled><br>
+    <script src="decode.js"></script>
+    <script>
+      // Handle form submission
+      document.getElementById("macroForm").addEventListener("submit", async function(event) {
+        event.preventDefault(); // Prevent the form from submitting traditionally
 
-</form>
+        const inputValue = document.getElementById("macroValue").value;
+        const resultElement = document.getElementById("result");
+
+        // Fetch the macro name based on input value
+        resultElement.textContent = "Searching..."; // Show a loading message
+        const macroName = await fetchMacroName(inputValue);
+
+        // Display the result
+        resultElement.textContent = macroName;
+      });
+    </script>
+</body>
+</html>
