@@ -1,96 +1,112 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Macro Name Finder</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Macro Name Finder</title>
+  <link rel="stylesheet" href="../github-markdown-css/github-markdown.css">
+  <style>
+    .markdown-body {
+      box-sizing: border-box;
+      min-width: 200px;
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 45px;
+    }
+
+    @media (max-width: 767px) {
+      .markdown-body {
+        padding: 15px;
+      }
+    }
+  </style>
 </head>
-<body>
-    <h1>Find Macro Name</h1>
-    <form id="macroForm">
-        <label for="macroValue">Enter Value:</label>
-        <input type="text" id="macroValue" name="macroValue" required>
-        <button type="submit">Find Macro</button>
-    </form>
+<body class="markdown-body">
+  <h1>RadioLib Status Code Decoder</h1>
+  <form id="statusForm">
+    <label for="statusValue">Status Code:</label>
+    <input type="text" id="statusValue" name="statusValue" required>
+    <button type="submit">Decode</button>
+  </form>
 
-    <h2>Result:</h2>
-    <p id="result">Enter a value and click "Find Macro" to see the result here.</p>
+  <h2>Result:</h2>
+  <p id="result">Enter RadioLib status code value (a negative integer) and click "Decode" to see the result here.</p>
 
-    <script>
-      function getMacroVal(element) {
-        // Get the text content of the element
-        const text = element.textContent;
+  <script>
+    function getMacroVal(element) {
+      // Get the text content of the element
+      const text = element.textContent;
 
-        // Use a regular expression to match the number in parentheses
-        const match = text.match(/\((-?\d+)\)/);
+      // Use a regular expression to match the number in parentheses
+      const match = text.match(/\((-?\d+)\)/);
 
-        // If a match is found, return the captured number, otherwise return null
-        return match ? parseInt(match[1], 10) : null;
+      // If a match is found, return the captured number, otherwise return null
+      return match ? parseInt(match[1], 10) : null;
+    }
+
+    async function decodeStatus(inputValue) {
+      const url = 'https://jgromes.github.io/RadioLib/group__status__codes.html';
+
+      try {
+          // Fetch the HTML content from the URL
+          const response = await fetch(url);
+
+          // Check if the response is successful
+          if (!response.ok) {
+              throw new Error("HTTP error! Status: ${response.status}");
+          }
+
+          // Retrieve the HTML text
+          const htmlText = await response.text();
+
+          // Parse the HTML text into a DOM document
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(htmlText, 'text/html');
+
+          // Find all macro definitions (adjust selector if necessary)
+          const macros = doc.querySelectorAll('.memItemRight');
+
+          // Loop through macros and check if any match the input value
+          for (let macro of macros) {
+              console.log(macro)
+              // Assuming the macro name is within a certain tag (e.g., `.memname`)
+              const macroNameElement = macro.querySelector('.el');
+
+              if (macroNameElement) {
+                  const macroName = macroNameElement.textContent.trim();
+                  const statusValue = getMacroVal(macro)
+                  console.log(statusValue)
+
+                  // Check if the description contains the input value
+                  if (statusValue == inputValue) {
+                      return macroName; // Return the macro name if found
+                  }
+              }
+          }
+
+          // If no match is found
+          return "No macro found for value: ${inputValue}";
+      } catch (error) {
+          console.error("Error fetching or parsing the HTML:", error);
+          return "Error fetching or parsing the HTML.";
       }
-
-      async function fetchMacroName(inputValue) {
-        const url = 'https://jgromes.github.io/RadioLib/group__status__codes.html';
-
-        try {
-            // Fetch the HTML content from the URL
-            const response = await fetch(url);
-
-            // Check if the response is successful
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-
-            // Retrieve the HTML text
-            const htmlText = await response.text();
-
-            // Parse the HTML text into a DOM document
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(htmlText, 'text/html');
-
-            // Find all macro definitions (adjust selector if necessary)
-            const macros = doc.querySelectorAll('.memItemRight');
-
-            // Loop through macros and check if any match the input value
-            for (let macro of macros) {
-                console.log(macro)
-                // Assuming the macro name is within a certain tag (e.g., `.memname`)
-                const macroNameElement = macro.querySelector('.el');
-
-                if (macroNameElement) {
-                    const macroName = macroNameElement.textContent.trim();
-                    const macroValue = getMacroVal(macro)
-                    console.log(macroValue)
-
-                    // Check if the description contains the input value
-                    if (macroValue == inputValue) {
-                        return macroName; // Return the macro name if found
-                    }
-                }
-            }
-
-            // If no match is found
-            return `No macro found for value: ${inputValue}`;
-        } catch (error) {
-            console.error("Error fetching or parsing the HTML:", error);
-            return "Error fetching or parsing the HTML.";
-        }
-      }
+    }
 
 
-      // Handle form submission
-      document.getElementById("macroForm").addEventListener("submit", async function(event) {
-        event.preventDefault(); // Prevent the form from submitting traditionally
+    // Handle form submission
+    document.getElementById("statusForm").addEventListener("submit", async function(event) {
+      event.preventDefault(); // Prevent the form from submitting traditionally
 
-        const inputValue = document.getElementById("macroValue").value;
-        const resultElement = document.getElementById("result");
+      const inputValue = document.getElementById("statusValue").value;
+      const resultElement = document.getElementById("result");
 
-        // Fetch the macro name based on input value
-        resultElement.textContent = "Searching..."; // Show a loading message
-        const macroName = await fetchMacroName(inputValue);
+      // Fetch the macro name based on input value
+      resultElement.textContent = "Searching..."; // Show a loading message
+      const macroName = await decodeStatus(inputValue);
 
-        // Display the result
-        resultElement.textContent = macroName;
-      });
-    </script>
+      // Display the result
+      resultElement.textContent = macroName;
+    });
+  </script>
 </body>
 </html>
