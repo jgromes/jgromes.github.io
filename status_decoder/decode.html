@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Macro Name Finder</title>
+  <title>RadioLib Status Code Decoder</title>
   <link rel="stylesheet" href="../github-markdown-css/github-markdown.css">
   <style>
     .markdown-body {
@@ -23,14 +23,20 @@
 </head>
 <body class="markdown-body">
   <h1>RadioLib Status Code Decoder</h1>
+  <p>
+    All RadioLib status codes can be found <a href="https://jgromes.github.io/RadioLib/group__status__codes.html">here.</a>
+    This decoder pulls data directly from that page, which is built automatically from <a href="https://github.com/jgromes/RadioLib/blob/master/src/TypeDef.h">RadioLib source.</a>
+    Enter RadioLib status code value (a negative integer) and click "Decode" to see the result below.
+  </p>
+
   <form id="statusForm">
     <label for="statusValue">Status Code:</label>
     <input type="text" id="statusValue" name="statusValue" required>
     <button type="submit">Decode</button>
   </form>
 
-  <h2>Result:</h2>
-  <p id="result">Enter RadioLib status code value (a negative integer) and click "Decode" to see the result here.</p>
+  <h2>Result</h2>
+  <pre><code><p id="result"></p></code></pre>
 
   <script>
     function getMacroVal(element) {
@@ -53,7 +59,7 @@
 
           // Check if the response is successful
           if (!response.ok) {
-              throw new Error("HTTP error! Status: ${response.status}");
+              throw new Error(response.status);
           }
 
           // Retrieve the HTML text
@@ -68,27 +74,34 @@
 
           // Loop through macros and check if any match the input value
           for (let macro of macros) {
-              console.log(macro)
               // Assuming the macro name is within a certain tag (e.g., `.memname`)
               const macroNameElement = macro.querySelector('.el');
 
               if (macroNameElement) {
                   const macroName = macroNameElement.textContent.trim();
                   const statusValue = getMacroVal(macro)
-                  console.log(statusValue)
 
                   // Check if the description contains the input value
                   if (statusValue == inputValue) {
-                      return macroName; // Return the macro name if found
+                    const macroId = macro.parentElement.className.match(/memitem:(\S+)/)[1];
+                    const descriptionElement = doc.querySelector(`.memdesc\\:${macroId} .mdescRight`);
+
+                    if (descriptionElement) {
+                        const description = descriptionElement.textContent.trim();
+                        return { macroName, description }; // Return both macro name and description
+                    }
                   }
               }
           }
 
           // If no match is found
-          return "No macro found for value: ${inputValue}";
+          macroName = "No status code found for value:";
+          description = inputValue;
+          return { macroName, description };
       } catch (error) {
-          console.error("Error fetching or parsing the HTML:", error);
-          return "Error fetching or parsing the HTML.";
+          macroName = "Error fetching or parsing the HTML:";
+          description = error;
+          return { macroName, description };
       }
     }
 
@@ -102,10 +115,14 @@
 
       // Fetch the macro name based on input value
       resultElement.textContent = "Searching..."; // Show a loading message
-      const macroName = await decodeStatus(inputValue);
+      const result = await decodeStatus(inputValue);
 
       // Display the result
-      resultElement.textContent = macroName;
+      if (typeof result === "object") {
+        resultElement.innerHTML = `${result.macroName}\n${result.description}`;
+      } else {
+        resultElement.innerHTML = `Status code not found!`
+      }
     });
   </script>
 </body>
